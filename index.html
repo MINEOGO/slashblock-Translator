@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SlashBlock Translator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #333;
+            color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 2rem;
+        }
+
+        .translator-container {
+            width: 95%;
+            max-width: 1000px;
+            text-align: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        h1 {
+            background-color: #f5eeda;
+            color: #333;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 1rem;
+            margin: 0 0 1.5rem 0;
+            border-radius: 6px;
+        }
+
+        .text-area-container {
+            display: flex;
+            flex-direction: column;
+            width: 50%;
+            position: relative;
+        }
+
+        .text-areas {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 40vh;
+            padding: 15px;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.1rem;
+            background-color: #4f4f4f;
+            color: #ffffff;
+            resize: vertical;
+            line-height: 1.5;
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            box-shadow: 0 0 10px #f5eeda;
+            border-color: #f5eeda;
+        }
+
+        textarea::placeholder {
+            color: #bbbbbb;
+        }
+
+        .buttons {
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .buttons button {
+            background: #f5eeda;
+            color: #333;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s ease;
+        }
+
+        .buttons button:hover {
+            background: #e0d6b9;
+        }
+
+        .unknown {
+            background-color: rgba(255, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .text-areas {
+                flex-direction: column;
+            }
+            .text-area-container {
+                width: 100%;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="translator-container">
+        <h1>SlashBlock Translator</h1>
+        <div class="text-areas">
+            <div class="text-area-container">
+                <textarea id="englishInput" placeholder="Type English here..."></textarea>
+                <div class="buttons">
+                    <button onclick="copyText('englishInput')">Copy</button>
+                    <button onclick="clearText('englishInput')">Clear</button>
+                    <button onclick="downloadText('englishInput', 'english.txt')">Download</button>
+                </div>
+            </div>
+            <div class="text-area-container">
+                <textarea id="slashblockInput" placeholder="Type Slashblock here..."></textarea>
+                <div class="buttons">
+                    <button onclick="copyText('slashblockInput')">Copy</button>
+                    <button onclick="clearText('slashblockInput')">Clear</button>
+                    <button onclick="downloadText('slashblockInput', 'slashblock.txt')">Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const slashblockMap = {
+            'a': '/\\', 'b': '\\///', 'c': '\\/\\/', 'd': '\\//', 'e': '/', 'f': '//\\/',
+            'g': '\\\\/', 'h': '////', 'i': '//', 'j': '/\\\\\\', 'k': '\\/\\', 'l': '/\\//',
+            'm': '\\\\', 'n': '\\/', 'o': '\\\\\\', 'p': '/\\\\/', 'q': '\\\\/\\', 'r': '/\\/',
+            's': '///', 't': '\\', 'u': '//\\', 'v': '///\\', 'w': '/\\\\', 'x': '\\//\\',
+            'y': '\\/\\\\', 'z': '\\\\//',
+            '1': '/\\\\\\\\', '2': '//\\\\\\', '3': '///\\\\', '4': '////\\', '5': '/////',
+            '6': '\\\\\\\\/', '7': '\\\\\\//', '8': '\\\\//', '9': '\\\\\\/',
+            ',': '\\\\//\\\\', '.': '/\\/\\/\\', ' ': ' '
+        };
+
+        const englishMap = Object.fromEntries(
+            Object.entries(slashblockMap).map(([k, v]) => [v, k])
+        );
+
+        const englishTextarea = document.getElementById('englishInput');
+        const slashblockTextarea = document.getElementById('slashblockInput');
+
+        let debounceTimer;
+        function debounce(fn) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(fn, 200);
+        }
+
+        englishTextarea.addEventListener('input', () => {
+            debounce(() => {
+                const englishText = englishTextarea.value.toLowerCase();
+                let slashblockText = '';
+                for (const char of englishText) {
+                    slashblockText += (slashblockMap[char] || '?') + ' ';
+                }
+                slashblockTextarea.value = slashblockText.trimEnd();
+            });
+        });
+
+        slashblockTextarea.addEventListener('input', () => {
+            debounce(() => {
+                const blocks = slashblockTextarea.value.trim().split(/\s+/);
+                let englishText = '';
+                for (const block of blocks) {
+                    englishText += englishMap[block] || '?';
+                }
+                englishTextarea.value = englishText;
+            });
+        });
+
+        function copyText(id) {
+            const el = document.getElementById(id);
+            navigator.clipboard.writeText(el.value);
+        }
+
+        function clearText(id) {
+            document.getElementById(id).value = '';
+        }
+
+        function downloadText(id, filename) {
+            const blob = new Blob([document.getElementById(id).value], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        }
+    </script>
+
+</body>
+              </html>
+              
